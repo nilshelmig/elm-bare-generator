@@ -101,7 +101,6 @@ type UnionWithPrimitive (int | void)
 ```elm
 module Messages exposing (Address, Customer, Department(..), Employee, Person(..), PublicKey, Sequential(..), Time, UnionWithPrimitive(..), fromAddress, fromCustomer, fromDepartment, fromEmployee, fromPerson, fromPublicKey, fromSequential, fromTime, fromUnionWithPrimitive, toAddress, toCustomer, toDepartment, toEmployee, toPerson, toPublicKey, toSequential, toTime, toUnionWithPrimitive)
 
-import Array exposing (Array)
 import Codec.Bare as Codec exposing (Bytes, Codec)
 import Dict exposing (Dict)
 
@@ -237,9 +236,9 @@ codecOfCustomer =
         |> Codec.field .address codecOfAddress
         |> Codec.field
             .orders
-            (Codec.array
+            (Codec.list
                 (Codec.struct (\quantity orderId -> { quantity = quantity, orderId = orderId })
-                    |> Codec.field .orderId Codec.i64
+                    |> Codec.field .orderId Codec.int
                     |> Codec.field .quantity Codec.i32
                     |> Codec.buildStruct
                 )
@@ -264,16 +263,27 @@ codecOfEmployee =
 codecOfPerson : Codec Person
 codecOfPerson =
     Codec.taggedUnion
-        Codec.variant1 0 PersonCustomer codecOfCustomer
-        Codec.variant1 1 PersonEmployee codecOfEmployee
-        Codec.variant0 2 PersonTerminatedEmployee
-        Codec.buildTaggedUnion
+        (\personCustomer personEmployee personTerminatedEmployee value ->
+            case value of
+                PersonCustomer p ->
+                    personCustomer p
+
+                PersonEmployee p ->
+                    personEmployee p
+
+                PersonTerminatedEmployee ->
+                    personTerminatedEmployee
+        )
+        |> Codec.variant1 0 PersonCustomer codecOfCustomer
+        |> Codec.variant1 1 PersonEmployee codecOfEmployee
+        |> Codec.variant0 2 PersonTerminatedEmployee
+        |> Codec.buildTaggedUnion
 
 
 codecOfAddress : Codec Address
 codecOfAddress =
     Codec.struct Address
-        |> Codec.field .address (Codec.arrayWithLength 4 Codec.string)
+        |> Codec.field .address (Codec.listWithLength 4 Codec.string)
         |> Codec.field .city Codec.string
         |> Codec.field .state Codec.string
         |> Codec.field .country Codec.string
@@ -283,9 +293,17 @@ codecOfAddress =
 codecOfUnionWithPrimitive : Codec UnionWithPrimitive
 codecOfUnionWithPrimitive =
     Codec.taggedUnion
-        Codec.variant1 0 UnionWithPrimitivePrimitive0 Codec.int
-        Codec.variant0 1 UnionWithPrimitivePrimitive1
-        Codec.buildTaggedUnion
+        (\unionWithPrimitivePrimitive0 unionWithPrimitivePrimitive1 value ->
+            case value of
+                UnionWithPrimitivePrimitive0 p ->
+                    unionWithPrimitivePrimitive0 p
+
+                UnionWithPrimitivePrimitive1 ->
+                    unionWithPrimitivePrimitive1
+        )
+        |> Codec.variant1 0 UnionWithPrimitivePrimitive0 Codec.int
+        |> Codec.variant0 1 UnionWithPrimitivePrimitive1
+        |> Codec.buildTaggedUnion
 
 
 toUnionWithPrimitive : Bytes -> Maybe UnionWithPrimitive
