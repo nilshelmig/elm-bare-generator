@@ -28,7 +28,7 @@ This allows to create a npm script to generate BARE messages:
 
 ## Caveats
 - Anonymous unions are not supported. Extract unions to a named type.
-- `int`, `i64` `uint` & `u64` can only hold a maximum of 52 bit.
+- `int`, `i64` `uint` & `u64` can only hold a maximum of 53 bit.
 
 ## Example
 This example was created with
@@ -380,6 +380,6 @@ fromPublicKey =
 </details>
 
 ## Credits
-This project was inspired from [miniBills generator](https://github.com/miniBill/elm-bare-generator). miniBill also created the [elm-bare](https://github.com/miniBill/elm-bare) package for writing BARE message codecs.
+This project was inspired by [miniBills generator](https://github.com/miniBill/elm-bare-generator). miniBill also created the [elm-bare](https://github.com/miniBill/elm-bare) package for writing BARE message codecs.
 
-Thanks to [DrewDevault](https://drewdevault.com/) for creating the [BARE](https://baremessages.org/) definition.
+Thanks to [DrewDevault](https://drewdevault.com/) for creating the [BARE](https://baremessages.org/) specification.

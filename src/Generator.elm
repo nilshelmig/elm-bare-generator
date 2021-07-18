@@ -1,8 +1,9 @@
 module Generator exposing (generate)
 
 import AST exposing (PrimitiveType(..), UserType)
-import Elm.CodeGen as Gen exposing (Declaration, Expression, Import, TopLevelExpose, TypeAnnotation)
+import Elm.CodeGen as Gen exposing (Declaration, Expression, Import, Pattern, TopLevelExpose, TypeAnnotation)
 import Elm.Pretty
+import String.Extra
 import Transformer exposing (BareType(..), ElmType(..), EnumInfo, MapKeyType(..), RecordInfo, UnionCase, UnionInfo, asBareTypes, resultCollect)
 
 
@@ -193,6 +194,10 @@ primitiveCodec primitive =
         Int ->
             Gen.fqFun [ "Codec" ] "int"
 
+        -- i64 is not supported yet by elm-bare
+        I 64 ->
+            Gen.fqFun [ "Codec" ] "int"
+
         I size ->
             Gen.fqFun [ "Codec" ] ("i" ++ String.fromInt size)
 
@@ -238,8 +243,9 @@ mapKeyCodecName key =
         Int32Key ->
             "i32"
 
+        -- i64 is not yet supported by elm-bare
         Int64Key ->
-            "i64"
+            "int"
 
         UIntKey ->
             "uint"
@@ -316,6 +322,35 @@ unionCaseCodec unionCase =
                 |> Gen.fqConstruct [ "Codec" ] "variant0"
 
 
+unionMatchCase : UnionCase -> ( Pattern, Expression )
+unionMatchCase unionCase =
+    case unionCase.payload of
+        Just _ ->
+            ( Gen.namedPattern unionCase.name [ Gen.varPattern "p" ], Gen.fqConstruct [] (unionCase.name |> String.Extra.decapitalize) [ Gen.val "p" ] )
+
+        Nothing ->
+            ( Gen.namedPattern unionCase.name [], Gen.val (unionCase.name |> String.Extra.decapitalize) )
+
+
+unionMatch : UnionInfo -> Expression
+unionMatch union =
+    Gen.lambda
+        ([ union.cases
+            |> List.reverse
+            |> List.map (\c -> c.name |> String.Extra.decapitalize |> Gen.varPattern)
+         , [ Gen.varPattern "value" ]
+         ]
+            |> List.concat
+        )
+        (Gen.caseExpr
+            (Gen.val "value")
+            (union.cases
+                |> List.reverse
+                |> List.map unionMatchCase
+            )
+        )
+
+
 unionCodec : UnionInfo -> Expression
 unionCodec union =
     [ union.cases
@@ -324,7 +359,7 @@ unionCodec union =
     , [ Gen.fqFun [ "Codec" ] "buildTaggedUnion" ]
     ]
         |> List.concat
-        |> Gen.fqConstruct [ "Codec" ] "taggedUnion"
+        |> Gen.pipe (Gen.fqConstruct [ "Codec" ] "taggedUnion" [ unionMatch union ])
 
 
 elmTypeCodec : Maybe String -> ElmType -> Expression
@@ -342,10 +377,10 @@ elmTypeCodec aliasType elmType =
         ElmTypeList list ->
             case list.size of
                 Just size ->
-                    Gen.fqConstruct [ "Codec" ] "arrayWithLength" [ Gen.int size, elmTypeCodec Nothing list.listType |> Gen.parens ]
+                    Gen.fqConstruct [ "Codec" ] "listWithLength" [ Gen.int size, elmTypeCodec Nothing list.listType |> Gen.parens ]
 
                 Nothing ->
-                    Gen.fqConstruct [ "Codec" ] "array" [ elmTypeCodec Nothing list.listType |> Gen.parens ]
+                    Gen.fqConstruct [ "Codec" ] "list" [ elmTypeCodec Nothing list.listType |> Gen.parens ]
 
         ElmTypeMap map ->
             Gen.fqConstruct [ "Codec" ] "dict" [ Gen.fqFun [ "Codec" ] (mapKeyCodecName map.keyType), elmTypeCodec Nothing map.valueType |> Gen.parens ]
@@ -439,9 +474,6 @@ imports =
     , Gen.importStmt [ "Dict" ]
         Nothing
         (Just (Gen.exposeExplicit [ Gen.closedTypeExpose "Dict" ]))
-    , Gen.importStmt [ "Array" ]
-        Nothing
-        (Just (Gen.exposeExplicit [ Gen.closedTypeExpose "Array" ]))
     ]
 
 

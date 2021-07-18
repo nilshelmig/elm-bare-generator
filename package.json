@@ -1,9 +1,11 @@
 {
   "name": "elm-bare-generator",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Code generator for elm-bare. Generate elm codecs from BARE schema file",
   "main": "build/index.js",
+  "bin": "./index.js",
   "files": [
+    "index.js",
     "build/index.js",
     "README.md",
     "LICENCE"
