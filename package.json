@@ -1,0 +1,35 @@
+{
+  "name": "elm-bare-generator",
+  "version": "1.0.0",
+  "description": "Code generator for elm-bare. Generate elm codecs from BARE schema file",
+  "main": "build/index.js",
+  "files": [
+    "build/index.js",
+    "README.md",
+    "LICENCE"
+  ],
+  "scripts": {
+    "build": "elm make src/Main.elm --output=build/elm.js --optimize && npm run bundle",
+    "bundle": "esbuild src/main.js --bundle --target=node14 --platform=node --minify --outfile=build/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nilshelmig/elm-bare-generator.git"
+  },
+  "keywords": [
+    "bare",
+    "elm",
+    "codegen"
+  ],
+  "author": "Nils Helmig",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nilshelmig/elm-bare-generator/issues"
+  },
+  "homepage": "https://github.com/nilshelmig/elm-bare-generator#readme",
+  "devDependencies": {
+    "elm": "^0.19.1-5",
+    "elm-format": "^0.8.5",
+    "esbuild": "^0.12.15"
+  }
+}
